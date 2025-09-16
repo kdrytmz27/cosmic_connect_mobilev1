@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "444947357487",
+    "project_id": "cosmic-connect-app",
+    "storage_bucket": "cosmic-connect-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:444947357487:android:2b215abc5414dc14b58bda",
+        "android_client_info": {
+          "package_name": "com.example.cosmic_connect_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXihryG3oPkO7VRuGYmEcq_CWiXtaaUBE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

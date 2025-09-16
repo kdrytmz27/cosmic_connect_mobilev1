@@ -1,0 +1,52 @@
+name: cosmic_connect_mobile
+description: "The mobile app for Cosmic Connect."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  flutter_localizations:
+    sdk: flutter
+
+  # --- State Management ---
+  provider: ^6.1.2
+
+  # --- Ağ ve Veri Depolama ---
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  web_socket_channel: ^2.4.0
+  
+  # --- Firebase (Anlık Bildirimler) ---
+  firebase_core: ^3.1.1
+  firebase_messaging: ^15.0.2
+  flutter_local_notifications: ^17.2.1
+
+  # --- Uygulama İçi Satın Alma ---
+  in_app_purchase: ^3.2.0
+
+  # --- Yardımcı Paketler ---
+  intl: ^0.20.2 # DÜZELTİLDİ: Flutter SDK'sının istediği versiyonla tam uyumlu.
+  image_picker: ^1.1.2
+  http_parser: ^4.0.2
+
+  # --- Arayüz (UI) Paketleri ---
+  cupertino_icons: ^1.0.6
+  badges: ^3.1.2
+  flutter_svg: ^2.0.10+1
+  fl_chart: ^0.68.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # assets:
+  #   - assets/images/

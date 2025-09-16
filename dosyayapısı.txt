@@ -1,0 +1,46 @@
+📦lib
+ ┣ 📂models
+ ┃ ┣ 📜activity_data.dart
+ ┃ ┣ 📜app_user.dart
+ ┃ ┣ 📜compatibility.dart
+ ┃ ┣ 📜compatibility_report.dart
+ ┃ ┣ 📜conversation.dart
+ ┃ ┣ 📜daily_match.dart
+ ┃ ┣ 📜message.dart
+ ┃ ┣ 📜profile_details.dart
+ ┃ ┗ 📜user_profile.dart
+ ┣ 📂providers
+ ┃ ┣ 📜activity_provider.dart
+ ┃ ┣ 📜auth_provider.dart
+ ┃ ┣ 📜chat_provider.dart
+ ┃ ┣ 📜discover_provider.dart
+ ┃ ┣ 📜notification_provider.dart
+ ┃ ┣ 📜profile_provider.dart
+ ┃ ┗ 📜unread_provider.dart
+ ┣ 📂screens
+ ┃ ┣ 📜activity_screen.dart
+ ┃ ┣ 📜chat_room_screen.dart
+ ┃ ┣ 📜complete_profile_screen.dart
+ ┃ ┣ 📜discover_screen.dart
+ ┃ ┣ 📜edit_profile_screen.dart
+ ┃ ┣ 📜login_screen.dart
+ ┃ ┣ 📜main_screen.dart
+ ┃ ┣ 📜messages_screen.dart
+ ┃ ┣ 📜premium_screen.dart
+ ┃ ┣ 📜profile_detail_screen.dart
+ ┃ ┣ 📜profile_screen.dart
+ ┃ ┣ 📜register_screen.dart
+ ┃ ┗ 📜splash_screen.dart
+ ┣ 📂services
+ ┃ ┣ 📂package.http
+ ┃ ┃ ┗ 📜http.dart
+ ┃ ┣ 📂stubs
+ ┃ ┃ ┗ 📜io_stub.dart
+ ┃ ┣ 📜api_service.dart
+ ┃ ┣ 📜navigation_service.dart
+ ┃ ┗ 📜notification_service.dart
+ ┣ 📂widgets
+ ┃ ┣ 📜filter_sheet.dart
+ ┃ ┣ 📜premium_wall.dart
+ ┃ ┗ 📜profile_card.dart
+ ┗ 📜main.dart
