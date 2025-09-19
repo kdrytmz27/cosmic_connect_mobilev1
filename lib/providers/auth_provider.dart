@@ -12,7 +12,7 @@ class AuthProvider with ChangeNotifier {
 
   AppUser? _appUser;
   AuthStatus _status = AuthStatus.uninitialized;
-  bool _isLoading = false; // Bu genel isLoading, diğer metodlar için kalabilir
+  bool _isLoading = false;
   String? _errorMessage;
 
   AppUser? get user => _appUser;
@@ -25,31 +25,25 @@ class AuthProvider with ChangeNotifier {
     tryAutoLogin();
   }
 
-  // --- ANA DEĞİŞİKLİK BURADA: register metodu sadeleştirildi ---
   Future<bool> register(
       {required String username,
       required String email,
       required String password}) async {
-    // Bu metod artık kendi içinde _isLoading'i yönetmiyor ve notifyListeners çağırmıyor.
-    // Sadece API'ye gidip, başarılı olursa durumu güncelliyor.
     _errorMessage = null;
     try {
       final user = await _apiService.register(
           username: username, email: email, password: password);
       _appUser = user;
       _status = AuthStatus.authenticated;
-      notifyListeners(); // Sadece BAŞARILI olduğunda ve TEK SEFERDE durum değişikliğini bildir.
+      notifyListeners();
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      // Başarısızlık durumunda state'i bozmuyoruz, sadece hata mesajını set ediyoruz.
-      // Bu sayede UI tekrar butona basmaya izin verir.
       notifyListeners();
       return false;
     }
   }
 
-  // Diğer metodlar aynı kalabilir...
   Future<void> tryAutoLogin() async {
     _status = AuthStatus.uninitialized;
     notifyListeners();
@@ -113,14 +107,18 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshUser() async {
-    if (isAuthenticated) {
-      try {
-        _appUser = await _apiService.getMe();
-        notifyListeners();
-      } catch (e) {
-        await logout();
-      }
+  // --- NİHAİ VE DOĞRU YENİLEME MANTIĞI ---
+  // Sunucudan gelen taze veriyi al ve ne olursa olsun dinleyicilere bildir.
+  // Bu, tüm verilerin (isCalculated, burçlar, vb.) aynı anda güncellenmesini sağlar.
+  Future<void> refreshUserProfile() async {
+    try {
+      final freshUser = await _apiService.getMe();
+      _appUser = freshUser;
+      print(
+          "AuthProvider: Sunucudan taze veri alındı. UI güncellenmesi için BİLDİRİLİYOR.");
+      notifyListeners();
+    } catch (e) {
+      print("Kullanıcı profili yenilenirken hata oluştu: $e");
     }
   }
 }

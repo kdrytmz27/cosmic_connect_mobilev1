@@ -1,4 +1,4 @@
-// lib/screens/discover_screen.dart
+// Lütfen bu kodu kopyalayıp lib/screens/discover_screen.dart dosyasının içine yapıştırın.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,20 +10,39 @@ import '../models/daily_match.dart';
 import 'profile_detail_screen.dart';
 import '../widgets/profile_card.dart';
 import '../widgets/filter_sheet.dart';
+import '../services/api_service.dart';
 
-class DiscoverScreen extends StatefulWidget {
+class DiscoverScreen extends StatelessWidget {
   const DiscoverScreen({super.key});
+
   @override
-  State<DiscoverScreen> createState() => _DiscoverScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => DiscoverProvider(
+        ctx.read<ApiService>(),
+        ctx.read<AuthProvider>(),
+      ),
+      child: const DiscoverView(),
+    );
+  }
 }
 
-class _DiscoverScreenState extends State<DiscoverScreen> {
+class DiscoverView extends StatefulWidget {
+  const DiscoverView({super.key});
+  @override
+  State<DiscoverView> createState() => _DiscoverViewState();
+}
+
+class _DiscoverViewState extends State<DiscoverView> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DiscoverProvider>().loadInitialData();
+    });
   }
 
   @override
@@ -62,38 +81,33 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (ctx) => DiscoverProvider(ctx.read()),
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: SafeArea(
-          child: Column(
-            children: [
-              Consumer<DiscoverProvider>(builder: (context, provider, child) {
-                return _buildHeader(context, provider);
-              }),
-              Expanded(
-                child: Consumer<DiscoverProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.isLoadingInitial) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (provider.errorMessage != null) {
-                      return Center(child: Text(provider.errorMessage!));
-                    }
-                    return _buildBody(provider);
-                  },
-                ),
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: Consumer<DiscoverProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoadingInitial) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (provider.errorMessage != null) {
+                    return Center(child: Text(provider.errorMessage!));
+                  }
+                  return _buildBody(provider);
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, DiscoverProvider provider) {
-    final authProvider = context.read<AuthProvider>();
+  Widget _buildHeader(BuildContext context) {
+    // AuthProvider'a artık burada ihtiyacımız yok.
     return Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
       child: Row(
@@ -109,11 +123,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             icon: const Icon(Icons.filter_list_rounded, size: 20),
             label: const Text('Filtrele'),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => authProvider.logout(),
-            tooltip: 'Çıkış Yap',
-          )
+          // --- GÖREV 1 DEĞİŞİKLİĞİ: Çıkış Yap IconButton buradan KALDIRILDI ---
         ],
       ),
     );
@@ -216,7 +226,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '☀️ ${user.profile.sunSignDisplay ?? '-'}   🌙 ${user.profile.moonSignDisplay ?? '-'}',
-                  style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                  style: TextStyle(color: Colors.white.withAlpha(204)),
                 ),
               ],
             ),

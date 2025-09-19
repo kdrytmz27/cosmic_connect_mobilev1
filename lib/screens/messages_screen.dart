@@ -1,10 +1,11 @@
-// lib/screens/messages_screen.dart
+// Lütfen bu kodu kopyalayıp lib/screens/messages_screen.dart dosyasının içine yapıştırın.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../models/conversation.dart';
-import 'chat_room_screen.dart'; // Bir sonraki adımda oluşturacağız
+import 'chat_room_screen.dart';
+import '../services/navigation_service.dart'; // Navigasyon için import
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -19,12 +20,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   void initState() {
     super.initState();
+    _loadConversations();
+  }
+
+  void _loadConversations() {
     _conversationsFuture = context.read<ApiService>().getConversations();
   }
 
   void _refreshConversations() {
     setState(() {
-      _conversationsFuture = context.read<ApiService>().getConversations();
+      _loadConversations();
     });
   }
 
@@ -40,19 +45,30 @@ class _MessagesScreenState extends State<MessagesScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError ||
-              !snapshot.hasData ||
-              snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Henüz bir sohbetiniz yok.'),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                      onPressed: _refreshConversations,
-                      child: const Text('Yenile'))
-                ],
+
+          // --- GÖREV 6 DEĞİŞİKLİĞİ: Geliştirilmiş Boş Ekran ve Hata Durumu ---
+          if (snapshot.hasError) {
+            return _buildEmptyState(
+              icon: Icons.cloud_off,
+              message: "Mesajlar yüklenemedi.",
+              actionButton: ElevatedButton(
+                onPressed: _refreshConversations,
+                child: const Text('Tekrar Dene'),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return _buildEmptyState(
+              icon: Icons.message_outlined,
+              message: "İlk eşleşmeni bul ve sohbet etmeye başla!",
+              actionButton: TextButton(
+                onPressed: () {
+                  // TODO: Bu kısım, MainScreen'deki sekmeyi değiştiren bir yapıya bağlanmalı.
+                  // Şimdilik basit bir print ile bırakıyoruz.
+                  print("Keşfet sekmesine git");
+                },
+                child: const Text("Keşfet'te Yeni Kişilerle Tanış"),
               ),
             );
           }
@@ -101,6 +117,30 @@ class _MessagesScreenState extends State<MessagesScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  // Yeniden kullanılabilir boş ekran widget'ı
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String message,
+    required Widget actionButton,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          actionButton,
+        ],
       ),
     );
   }

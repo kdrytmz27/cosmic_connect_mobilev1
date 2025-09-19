@@ -1,5 +1,6 @@
-// lib/screens/profile_screen.dart
+// Lütfen bu kodu kopyalayıp lib/screens/profile_screen.dart dosyasının içine yapıştırın.
 
+import 'dart:convert'; // Base64 çözümlemesi için EKLENDİ
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -11,40 +12,85 @@ import 'edit_profile_screen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  String getZodiacSignSymbol(String? signName) {
+    if (signName == null) return '';
+    const Map<String, String> zodiacSymbols = {
+      'Koç': '♈',
+      'Boğa': '♉',
+      'İkizler': '♊',
+      'Yengeç': '♋',
+      'Aslan': '♌',
+      'Başak': '♍',
+      'Terazi': '♎',
+      'Akrep': '♏',
+      'Yay': '♐',
+      'Oğlak': '♑',
+      'Kova': '♒',
+      'Balık': '♓',
+    };
+    return zodiacSymbols[signName] ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // AuthProvider'ı genel kullanıcı verileri için dinliyoruz.
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 
-    // ProfileProvider'ı bu ekrana özel veriler için oluşturuyoruz.
     return ChangeNotifierProvider(
       create: (ctx) => ProfileProvider(ctx.read<ApiService>()),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Profilim'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                // === DEĞİŞİKLİK BURADA ===
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                );
-                // =========================
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.settings),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen()),
+                  );
+                } else if (value == 'logout') {
+                  context.read<AuthProvider>().logout();
+                }
               },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(Icons.edit),
+                    title: Text('Profili Düzenle'),
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Çıkış Yap'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         body: user == null
             ? const Center(child: Text("Kullanıcı bulunamadı."))
             : RefreshIndicator(
-                onRefresh: () => authProvider.refreshUser(),
+                onRefresh: () => authProvider.refreshUserProfile(),
                 child: ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
                     _buildProfileHeader(context, user),
                     const SizedBox(height: 24),
+
+                    // --- GÖREV 7 DEĞİŞİKLİĞİ: Doğum Haritası Kartı ---
+                    // Eğer harita görseli mevcutsa, bu kartı göster.
+                    if (user.profile.natalChartPngBase64 != null &&
+                        user.profile.natalChartPngBase64!.isNotEmpty)
+                      _buildNatalChartCard(
+                          context, user.profile.natalChartPngBase64!),
+
+                    const SizedBox(height: 16),
                     _buildSectionCard(
                       context,
                       title: 'Astrolojik DNA',
@@ -72,7 +118,6 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Burç Yorumları Bölümü
                     _buildHoroscopeSection(),
                   ],
                 ),
@@ -81,7 +126,57 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // --- GÖREV 7 DEĞİŞİKLİĞİ: Doğum Haritası Kartını oluşturan yeni widget ---
+  Widget _buildNatalChartCard(BuildContext context, String base64Image) {
+    // Base64 string'inin başındaki "data:image/png;base64," kısmını temizle
+    final cleanBase64 = base64Image.split(',').last;
+    final imageBytes = base64Decode(cleanBase64);
+
+    return _buildSectionCard(
+      context,
+      title: 'Doğum Haritan',
+      icon: Icons.brightness_high, // Güneş ikonu haritayı temsil edebilir
+      children: [
+        GestureDetector(
+          onTap: () {
+            // Haritaya tıklandığında tam ekran göstermek için bir diyalog aç
+            showDialog(
+              context: context,
+              builder: (ctx) => Dialog(
+                child: InteractiveViewer(
+                  // Yakınlaştırma ve kaydırma için
+                  child: Image.memory(imageBytes),
+                ),
+              ),
+            );
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: Image.memory(
+              imageBytes,
+              fit: BoxFit.cover,
+              // Yüklenirken veya hata durumunda gösterilecek widget'lar
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded) return child;
+                return AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(seconds: 1),
+                  curve: Curves.easeOut,
+                  child: child,
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return const Center(child: Text("Harita yüklenemedi."));
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildProfileHeader(BuildContext context, AppUser user) {
+    // ... Bu widget'ta değişiklik yok ...
     return Column(
       children: [
         CircleAvatar(
@@ -117,6 +212,7 @@ class ProfileScreen extends StatelessWidget {
       {required String title,
       required IconData icon,
       required List<Widget> children}) {
+    // ... Bu widget'ta değişiklik yok ...
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -141,49 +237,56 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildAstroInfoRow(String label, String? value) {
+    // ... Bu widget'ta değişiklik yok ...
+    final symbol = getZodiacSignSymbol(value);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-          Text(value ?? 'Hesaplanmadı',
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              if (symbol.isNotEmpty)
+                Text(
+                  '$symbol ',
+                  style: const TextStyle(fontSize: 16, color: Colors.purple),
+                ),
+              Text(
+                value ?? 'Hesaplanmadı',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  // Burç Yorumlarını gösteren yeni widget
   Widget _buildHoroscopeSection() {
+    // ... Bu widget'ta değişiklik yok ...
     return Consumer<ProfileProvider>(
       builder: (context, provider, child) {
-        // Ekran oluşturulduğunda verileri çek
         if (provider.horoscopeData == null && !provider.isLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             provider.fetchHoroscopes();
           });
         }
-
         if (provider.isLoading) {
           return const Center(
               child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: CircularProgressIndicator()));
         }
-
         if (provider.errorMessage != null) {
           return Center(child: Text(provider.errorMessage!));
         }
-
         final dailyHoroscope =
             provider.horoscopeData?['daily']?['prediction_data']?['prediction'];
-
         if (dailyHoroscope == null) {
-          return const SizedBox.shrink(); // Yorum yoksa bir şey gösterme
+          return const SizedBox.shrink();
         }
-
         return _buildSectionCard(
           context,
           title: "Günün Yorumu",

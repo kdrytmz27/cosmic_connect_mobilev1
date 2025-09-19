@@ -1,4 +1,4 @@
-// lib/screens/activity_screen.dart
+// Lütfen bu kodu kopyalayıp lib/screens/activity_screen.dart dosyasının içine yapıştırın.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,111 +14,203 @@ class ActivityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (ctx) => ActivityProvider(ctx.read<ApiService>()),
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: SafeArea(
-          child: Consumer<ActivityProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (provider.errorMessage != null) {
-                return Center(child: Text(provider.errorMessage!));
-              }
-              if (provider.activityData == null) {
-                return const Center(child: Text("Aktivite bulunamadı."));
-              }
+      child: const ActivityView(),
+    );
+  }
+}
 
-              final data = provider.activityData!;
-              final allListsEmpty = data.matches.isEmpty &&
-                  data.likers.isEmpty &&
-                  data.visitors.isEmpty;
+// Sekmeli yapıyı yönetmek için `TickerProviderStateMixin` ekliyoruz.
+class ActivityView extends StatefulWidget {
+  const ActivityView({super.key});
 
-              return RefreshIndicator(
-                onRefresh: provider.fetchActivityData,
-                child: allListsEmpty
-                    ? const Center(child: Text("Henüz bir aktiviteniz yok."))
-                    : ListView(
-                        padding: const EdgeInsets.all(16.0),
-                        children: [
-                          if (data.matches.isNotEmpty)
-                            _buildUserSection(
-                                context, "Eşleşmeler", data.matches),
-                          if (data.likers.isNotEmpty)
-                            _buildUserSection(
-                                context, "Seni Beğenenler", data.likers),
-                          if (data.visitors.isNotEmpty)
-                            _buildUserSection(context,
-                                "Profilini Ziyaret Edenler", data.visitors),
-                        ],
-                      ),
-              );
-            },
-          ),
+  @override
+  State<ActivityView> createState() => _ActivityViewState();
+}
+
+class _ActivityViewState extends State<ActivityView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ActivityProvider>().fetchActivityData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      // AppBar ekleyerek sekmeleri (TabBar) buraya yerleştiriyoruz.
+      appBar: AppBar(
+        title: const Text("Aktivite"),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          tabs: const [
+            Tab(text: "Seni Beğenenler"),
+            Tab(text: "Ziyaretçiler"),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        // `Consumer` widget'ını en tepeye taşıyarak tüm alt widget'ların
+        // provider'daki değişikliklerden haberdar olmasını sağlıyoruz.
+        child: Consumer<ActivityProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (provider.errorMessage != null) {
+              return _buildErrorState(
+                  context, provider.errorMessage!, provider.fetchActivityData);
+            }
+            if (provider.activityData == null) {
+              return const Center(child: Text("Aktivite bulunamadı."));
+            }
+
+            final data = provider.activityData!;
+
+            // Sekmelerin içeriğini `TabBarView` ile yönetiyoruz.
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                // "Seni Beğenenler" Sekmesi
+                _buildActivityList(
+                  context,
+                  users: data.likers,
+                  emptyStateIcon: Icons.favorite_border,
+                  emptyStateMessage: "Seni henüz kimse beğenmedi.",
+                  onRefresh: provider.fetchActivityData,
+                ),
+                // "Ziyaretçiler" Sekmesi
+                _buildActivityList(
+                  context,
+                  users: data.visitors,
+                  emptyStateIcon: Icons.visibility_outlined,
+                  emptyStateMessage: "Profilini henüz kimse ziyaret etmedi.",
+                  onRefresh: provider.fetchActivityData,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildUserSection(
-      BuildContext context, String title, List<AppUser> users) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Text(
-            title,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
+  // Kullanıcı listesini veya boş ekranı gösteren yeniden kullanılabilir widget.
+  Widget _buildActivityList(
+    BuildContext context, {
+    required List<AppUser> users,
+    required IconData emptyStateIcon,
+    required String emptyStateMessage,
+    required Future<void> Function() onRefresh,
+  }) {
+    if (users.isEmpty) {
+      return _buildEmptyState(context, emptyStateIcon, emptyStateMessage);
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(16.0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3, // Daha kompakt bir görünüm için 3 sütun
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.8,
         ),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              return _buildUserAvatar(context, users[index]);
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          return _buildUserAvatar(context, users[index]);
+        },
+      ),
     );
   }
 
+  // Avatar ve kullanıcı adını gösteren widget.
   Widget _buildUserAvatar(BuildContext context, AppUser user) {
     return GestureDetector(
       onTap: () {
         // TODO: ProfileDetailScreen'e yönlendirme yapılacak
-        // Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfileDetailScreen(user: user)));
       },
-      child: Container(
-        width: 90,
-        margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 40,
+            backgroundImage: user.profile.avatar != null
+                ? NetworkImage(user.profile.avatar!)
+                : null,
+            child: user.profile.avatar == null
+                ? const Icon(Icons.person, size: 40)
+                : null,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            user.username,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Hata durumunda gösterilecek ekran.
+  Widget _buildErrorState(
+      BuildContext context, String message, VoidCallback onRetry) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: user.profile.avatar != null
-                  ? NetworkImage(user.profile.avatar!)
-                  : null,
-              child: user.profile.avatar == null
-                  ? const Icon(Icons.person, size: 40)
-                  : null,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              user.username,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('Tekrar Dene'),
+            )
           ],
         ),
+      ),
+    );
+  }
+
+  // Liste boş olduğunda gösterilecek ekran.
+  Widget _buildEmptyState(BuildContext context, IconData icon, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              // TODO: Keşfet sekmesine yönlendirme
+            },
+            child: const Text("Keşfet'te Yeni Kişilerle Tanış"),
+          ),
+        ],
       ),
     );
   }

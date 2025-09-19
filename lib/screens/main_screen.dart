@@ -1,4 +1,4 @@
-// lib/screens/main_screen.dart
+// Lütfen bu kodu kopyalayıp lib/screens/main_screen.dart dosyasının içine yapıştırın.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -35,22 +35,12 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _selectedIndex = widget.initialIndex;
 
-    // Ekran açıldığında bildirim servislerini başlat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notificationService.init(context);
     });
   }
 
   void _onItemTapped(int index) {
-    final notificationProvider = context.read<NotificationProvider>();
-
-    // İlgili sekmeye tıklandığında rozeti temizle
-    if (index == 1 && notificationProvider.hasNewActivity) {
-      notificationProvider.setNewActivity(false);
-    } else if (index == 2 && notificationProvider.hasNewMessage) {
-      notificationProvider.setNewMessage(false);
-    }
-
     setState(() {
       _selectedIndex = index;
     });
@@ -58,6 +48,10 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- NİHAİ MİMARİ DEĞİŞİKLİĞİ ---
+    // MultiProvider ve karmaşık ProxyProvider buradan KALDIRILDI.
+    // MainScreen artık sadece bir iskelet görevi görüyor.
+    // Her ekran kendi ihtiyacı olan provider'ı kendi içinde yönetecek.
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -65,36 +59,29 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: Consumer<NotificationProvider>(
         builder: (context, provider, child) {
+          // NotificationProvider global kalabilir, sorun değil.
           return BottomNavigationBar(
             items: <BottomNavigationBarItem>[
               const BottomNavigationBarItem(
-                icon: Icon(Icons.explore_outlined),
-                activeIcon: Icon(Icons.explore),
-                label: 'Keşfet',
-              ),
+                  icon: Icon(Icons.explore_outlined),
+                  activeIcon: Icon(Icons.explore),
+                  label: 'Keşfet'),
               BottomNavigationBarItem(
-                icon: badges.Badge(
-                  showBadge: provider.hasNewActivity,
-                  badgeContent: const Text(''), // İçerik boş olabilir
-                  child: const Icon(Icons.notifications_none),
-                ),
-                activeIcon: const Icon(Icons.notifications),
-                label: 'Aktivite',
-              ),
+                  icon: badges.Badge(
+                      showBadge: provider.hasNewActivity,
+                      child: const Icon(Icons.notifications_none)),
+                  activeIcon: const Icon(Icons.notifications),
+                  label: 'Aktivite'),
               BottomNavigationBarItem(
-                icon: badges.Badge(
-                  showBadge: provider.hasNewMessage,
-                  badgeContent: const Text(''),
-                  child: const Icon(Icons.chat_bubble_outline),
-                ),
-                activeIcon: const Icon(Icons.chat_bubble),
-                label: 'Mesajlar',
-              ),
+                  icon: badges.Badge(
+                      showBadge: provider.hasNewMessage,
+                      child: const Icon(Icons.chat_bubble_outline)),
+                  activeIcon: const Icon(Icons.chat_bubble),
+                  label: 'Mesajlar'),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Profil',
-              ),
+                  icon: Icon(Icons.person_outline),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profil'),
             ],
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,

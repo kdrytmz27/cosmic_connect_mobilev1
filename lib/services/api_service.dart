@@ -30,9 +30,11 @@ class ApiException implements Exception {
 }
 
 class ApiService {
+  // GÜNCELLENDİ: kDebugMode ile yerel veya canlı sunucu arasında geçiş yapacak
   static const String _devBaseUrl = 'http://192.168.1.57:8000';
-  static const String _prodBaseUrl = 'https://sizin.api.domaininiz.com';
+  static const String _prodBaseUrl = 'https://cosmicapiv1-1.onrender.com';
   static const String baseUrl = kDebugMode ? _devBaseUrl : _prodBaseUrl;
+
   static const String _apiPath = '/api/v1';
 
   final http.Client _client;
@@ -52,14 +54,19 @@ class ApiService {
   }
 
   Future<Map<String, String>> _getHeaders() async {
-    final token = await _getToken();
-    if (token == null) {
-      throw ApiException('Authentication token not found.', 401);
-    }
-    return {
+    const String apiKey = 'COSMIC_API_SECRET_KEY_12345';
+
+    final Map<String, String> headers = {
       'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Token $token'
+      'X-API-Key': apiKey,
     };
+
+    final token = await _getToken();
+    if (token != null) {
+      headers['Authorization'] = 'Token $token';
+    }
+
+    return headers;
   }
 
   Uri _buildUri(String endpoint) => Uri.parse('$baseUrl$_apiPath/$endpoint');
@@ -81,16 +88,28 @@ class ApiService {
       required String email,
       required String password}) async {
     final url = _buildUri('users/register/');
+    final headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-API-Key': 'COSMIC_API_SECRET_KEY_12345'
+    };
     final response = await _client.post(url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: headers,
         body: json.encode(
             {'username': username, 'email': email, 'password': password}));
+
     final data = json.decode(utf8.decode(response.bodyBytes));
     if (response.statusCode == 201) {
       await _persistToken(data['token']);
       return AppUser.fromJson(data['user']);
     } else {
-      final errorMessage = (data as Map).values.first.first;
+      String errorMessage;
+      if (data is Map && data.values.isNotEmpty) {
+        errorMessage = data.values.first is List
+            ? data.values.first.first
+            : data.values.first.toString();
+      } else {
+        errorMessage = response.body;
+      }
       throw ApiException(errorMessage, response.statusCode);
     }
   }
@@ -98,8 +117,12 @@ class ApiService {
   Future<AppUser> login(
       {required String username, required String password}) async {
     final url = _buildUri('users/login/');
+    final headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-API-Key': 'COSMIC_API_SECRET_KEY_12345'
+    };
     final response = await _client.post(url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: headers,
         body: json.encode({'username': username, 'password': password}));
     final data = json.decode(utf8.decode(response.bodyBytes));
     if (response.statusCode == 200) {

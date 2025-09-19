@@ -1,6 +1,6 @@
-// lib/widgets/profile_card.dart
+// Lütfen bu kodu kopyalayıp lib/widgets/profile_card.dart dosyasının içine yapıştırın.
 
-import 'package:flutter/material.dart'; // <<<--- EKSİK OLAN EN ÖNEMLİ SATIR EKLENDİ ---
+import 'package:flutter/material.dart';
 import '../models/compatibility.dart';
 import '../models/app_user.dart';
 
@@ -21,6 +21,7 @@ class ProfileCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      // --- YAZIM HATASI DÜZELTİLDİ ---
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -28,15 +29,15 @@ class ProfileCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: GridTile(
-          footer: _buildFooter(context, user),
+          footer: _buildFooter(context, user, compatibility.score),
           child: Hero(
-            tag: 'profile-avatar-${user.id}', // Animasyon için benzersiz tag
+            tag: 'profile-avatar-${user.id}',
             child: Container(
               color: Colors.grey[200],
               child: avatarUrl != null
                   ? FadeInImage.assetNetwork(
                       // Lütfen projenize bir placeholder resmi eklediğinizden emin olun
-                      // assets/images/placeholder.png
+                      // Örneğin: assets/images/placeholder.png
                       placeholder: 'assets/images/placeholder.png',
                       image: avatarUrl,
                       fit: BoxFit.cover,
@@ -53,7 +54,7 @@ class ProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(BuildContext context, AppUser user) {
+  Widget _buildFooter(BuildContext context, AppUser user, int score) {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -62,8 +63,8 @@ class ProfileCard extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            Colors.black.withOpacity(0.6),
-            Colors.black.withOpacity(0.8),
+            Colors.black.withAlpha(153), // 0.6 opacity
+            Colors.black.withAlpha(204), // 0.8 opacity
           ],
           stops: const [0.0, 0.4, 1.0],
         ),
@@ -83,20 +84,34 @@ class ProfileCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '☀️ ${user.profile.sunSignDisplay ?? '-'}',
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+              Expanded(
+                child: Text(
+                  '☀️ ${user.profile.sunSignDisplay ?? '-'}  '
+                  '🌙 ${user.profile.moonSignDisplay ?? '-'}  '
+                  '✨ ${user.profile.risingSignDisplay ?? '-'}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Text(
-                '${compatibility.score}% Uyum',
-                style: const TextStyle(
-                  color: Colors.yellow,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(128), // 0.5 opacity
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _getScoreColor(score), width: 1),
+                ),
+                child: Text(
+                  '$score% Uyum',
+                  style: TextStyle(
+                    color: _getScoreColor(score),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
@@ -104,5 +119,12 @@ class ProfileCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getScoreColor(int score) {
+    if (score > 85) return Colors.greenAccent;
+    if (score > 70) return Colors.yellow;
+    if (score > 50) return Colors.orange;
+    return Colors.redAccent;
   }
 }

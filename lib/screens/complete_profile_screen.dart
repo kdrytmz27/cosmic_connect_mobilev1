@@ -1,12 +1,13 @@
-// Lütfen bu kodu kopyalayıp lib/screens/complete_profile_screen.dart dosyasının içine yapıştırın.
+// lib/screens/complete_profile_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
-import '../services/navigation_service.dart'; // Yönlendirme için eklendi
-import 'main_screen.dart'; // Başarılı olunca yönlendirmek için eklendi
+import '../services/navigation_service.dart';
+import 'loading_screen.dart';
+import 'main_screen.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});
@@ -23,7 +24,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   TimeOfDay? _selectedBirthTime;
   String? _selectedGenderValue;
 
-  final Map<String, String> _genderOptions = {
+  final Map<String, String> _genderOptions = const {
     'female': 'Kadın',
     'male': 'Erkek',
   };
@@ -39,7 +40,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       context: context,
       initialDate: _selectedBirthDate ?? DateTime(2000, 1, 1),
       firstDate: DateTime(1940),
-      // Kullanıcının en az 18 yaşında olmasını sağlar
       lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
       locale: const Locale('tr', 'TR'),
     );
@@ -52,7 +52,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedBirthTime ?? const TimeOfDay(hour: 12, minute: 0),
-      // 24 saat formatını zorunlu kılmak için eklendi
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
@@ -66,10 +65,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    // Formun geçerli olup olmadığını kontrol et
     if (!_formKey.currentState!.validate()) return;
 
-    // Tarih ve saat seçilip seçilmediğini de kontrol et (daha sağlam)
     if (_selectedBirthDate == null || _selectedBirthTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -91,21 +88,35 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           '${_selectedBirthTime!.hour.toString().padLeft(2, '0')}:${_selectedBirthTime!.minute.toString().padLeft(2, '0')}',
     };
 
-    final success = await authProvider.updateProfile(profileData: profileData);
+    try {
+      final success =
+          await authProvider.updateProfile(profileData: profileData);
 
-    if (mounted) {
-      // mounted kontrolü async işlemler sonrası için önemlidir
-      if (success) {
-        // Başarılı olduğunda kullanıcıyı ana ekrana yönlendir
+      if (mounted && success) {
+        // YENİ VE KESİN ÇÖZÜM:
+        // Profil güncellendikten sonra, bekleme mantığını çalıştırıyoruz.
+        // Bu, LoadingScreen'i güncel verilerle ana ekrana yönlendirecektir.
         NavigationService.navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
+          MaterialPageRoute(builder: (_) => const LoadingScreen()),
           (route) => false,
         );
-      } else {
+
+        // Bu kısım, artık LoadingScreen içinde polling yapıldığı için kaldırıldı.
+        // await authProvider.refreshUser();
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage ??
                 'Profil tamamlanamadı. Lütfen tekrar deneyin.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
             backgroundColor: Colors.red,
           ),
         );
@@ -115,7 +126,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Build metodu içinde provider'ı izlemek (watch) en iyi pratiktir.
     final isLoading = context.watch<AuthProvider>().isLoading;
 
     return Scaffold(
@@ -124,7 +134,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
-            // isLoading durumunda tüm formu etkisiz hale getirir
             child: AbsorbPointer(
               absorbing: isLoading,
               child: Column(
@@ -150,7 +159,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                   const SizedBox(height: 32),
                   DropdownButtonFormField<String>(
-                    value: _selectedGenderValue,
+                    initialValue: _selectedGenderValue,
                     decoration: const InputDecoration(labelText: 'Cinsiyetin'),
                     items: _genderOptions.entries.map((entry) {
                       return DropdownMenuItem<String>(
@@ -193,7 +202,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Widget _buildDateTimePickers() {
-    // Bu widget'ı ayrı bir metoda çıkarmak kodu daha okunaklı yapar.
     return Row(
       children: [
         Expanded(

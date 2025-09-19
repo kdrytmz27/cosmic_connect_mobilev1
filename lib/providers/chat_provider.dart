@@ -71,7 +71,10 @@ class ChatProvider with ChangeNotifier {
         final messageData = json.decode(data);
         final senderId = messageData['sender_id'];
 
-        final currentUserProfile = UserProfile(bio: ''); // Geçici boş profil
+        // Hata burada oluşuyordu. Yeni eklenen `isBirthChartCalculated` parametresi zorunlu olduğu için
+        // geçici bir değerle bile olsa buraya eklenmesi gerekiyordu.
+        final currentUserProfile =
+            UserProfile(bio: '', isBirthChartCalculated: false);
         final currentUser = AppUser(
             id: _currentUserId,
             username: "Ben",

@@ -1,4 +1,4 @@
-// lib/models/user_profile.dart
+// Lütfen bu kodu kopyalayıp lib/models/user_profile.dart dosyasının içine yapıştırın.
 
 class UserProfile {
   final String? avatar;
@@ -10,6 +10,8 @@ class UserProfile {
   final DateTime? birthDate;
   final String? birthTime;
   final String? birthCity;
+
+  final bool isBirthChartCalculated;
 
   final String? sunSign;
   final String? sunSignDisplay;
@@ -36,6 +38,7 @@ class UserProfile {
     this.birthDate,
     this.birthTime,
     this.birthCity,
+    required this.isBirthChartCalculated,
     this.sunSign,
     this.sunSignDisplay,
     this.moonSign,
@@ -52,35 +55,39 @@ class UserProfile {
     this.insightsData,
   });
 
+  // --- NİHAİ ZAFER DEĞİŞİKLİĞİ: fromJson METODU DÜZELTİLDİ ---
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    // Django'daki 'depth=1' ayarı sayesinde 'choices' alanları liste olarak gelir: [key, display_value]
-    // Bu yardımcı fonksiyon, bu listeden istediğimiz değeri güvenli bir şekilde alır.
-    String? getChoiceKey(dynamic data) => data is List ? data[0] : data;
-    String? getChoiceDisplay(dynamic data) => data is List ? data[1] : null;
-
     return UserProfile(
       avatar: json["avatar"],
       bio: json["bio"] ?? '',
       age: json["age"],
-      gender: getChoiceKey(json["gender"]),
-      genderDisplay: getChoiceDisplay(json["gender"]),
+      // Cinsiyet alanı hala liste formatında gelebilir, bu yüzden kontrolü koruyoruz.
+      gender: json["gender"] is List ? json["gender"][0] : json["gender"],
+      genderDisplay: json["gender"] is List ? json["gender"][1] : null,
       birthDate: json["birth_date"] == null
           ? null
           : DateTime.tryParse(json["birth_date"]),
       birthTime: json["birth_time"],
       birthCity: json["birth_city"],
-      sunSign: getChoiceKey(json["sun_sign"]),
-      sunSignDisplay: getChoiceDisplay(json["sun_sign"]),
-      moonSign: getChoiceKey(json["moon_sign"]),
-      moonSignDisplay: getChoiceDisplay(json["moon_sign"]),
-      risingSign: getChoiceKey(json["rising_sign"]),
-      risingSignDisplay: getChoiceDisplay(json["rising_sign"]),
-      mercurySign: getChoiceKey(json["mercury_sign"]),
-      mercurySignDisplay: getChoiceDisplay(json["mercury_sign"]),
-      venusSign: getChoiceKey(json["venus_sign"]),
-      venusSignDisplay: getChoiceDisplay(json["venus_sign"]),
-      marsSign: getChoiceKey(json["mars_sign"]),
-      marsSignDisplay: getChoiceDisplay(json["mars_sign"]),
+
+      // is_birth_chart_calculated alanını JSON'dan oku, yoksa varsayılan olarak 'false' ata.
+      isBirthChartCalculated: json["is_birth_chart_calculated"] ?? false,
+
+      // Artık API'den doğrudan string değerler geldiği için karmaşık fonksiyonlara gerek yok.
+      // JSON'daki değeri olduğu gibi alıyoruz.
+      sunSign: json["sun_sign"],
+      sunSignDisplay: json["sun_sign_display"],
+      moonSign: json["moon_sign"],
+      moonSignDisplay: json["moon_sign_display"],
+      risingSign: json["rising_sign"],
+      risingSignDisplay: json["rising_sign_display"],
+      mercurySign: json["mercury_sign"],
+      mercurySignDisplay: json["mercury_sign_display"],
+      venusSign: json["venus_sign"],
+      venusSignDisplay: json["venus_sign_display"],
+      marsSign: json["mars_sign"],
+      marsSignDisplay: json["mars_sign_display"],
+
       natalChartPngBase64: json["natal_chart_png_base64"],
       insightsData: json["insights_data"],
     );

@@ -8,11 +8,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
-import 'screens/complete_profile_screen.dart'; // YENİ: Profil tamamlama ekranını import ettik
+import 'screens/complete_profile_screen.dart';
 import 'services/api_service.dart';
 import 'services/navigation_service.dart';
 import 'providers/auth_provider.dart';
-import 'providers/notification_provider.dart';
+import 'providers/notification_provider.dart'; // Import'un burada olduğundan emin olalım
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +25,9 @@ class CosmicConnectApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- NİHAİ ZAFER DEĞİŞİKLİĞİ ---
+    // NotificationProvider, tıpkı AuthProvider gibi global bir state olduğu için,
+    // ait olduğu yere, yani uygulamanın en tepesindeki MultiProvider'a geri ekleniyor.
     return MultiProvider(
       providers: [
         Provider<ApiService>(
@@ -36,6 +39,7 @@ class CosmicConnectApp extends StatelessWidget {
           update: (context, apiService, previous) =>
               previous ?? AuthProvider(apiService),
         ),
+        // NotificationProvider buraya geri eklendi!
         ChangeNotifierProvider(
           create: (_) => NotificationProvider(),
         ),
@@ -74,26 +78,18 @@ class CosmicConnectApp extends StatelessWidget {
             fillColor: Colors.white,
           ),
         ),
-        // YÖNLENDİRME MANTIĞI BURADA GÜNCELLENDİ
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
             switch (authProvider.status) {
               case AuthStatus.uninitialized:
-                // Uygulama ilk açıldığında veya durum belirsizken bekleme ekranı gösterilir.
                 return const SplashScreen();
-
               case AuthStatus.unauthenticated:
-                // Kullanıcı giriş yapmamışsa giriş ekranına yönlendirilir.
                 return const LoginScreen();
-
               case AuthStatus.authenticated:
-                // Kullanıcı giriş yapmışsa, profilinin tam olup olmadığını kontrol et.
                 final userProfile = authProvider.user?.profile;
                 if (userProfile != null && userProfile.birthDate != null) {
-                  // Profil TAMAMLANMIŞ: Ana ekrana yönlendir.
                   return const MainScreen();
                 } else {
-                  // Profil EKSİK: Zorunlu profil tamamlama ekranına yönlendir.
                   return const CompleteProfileScreen();
                 }
             }

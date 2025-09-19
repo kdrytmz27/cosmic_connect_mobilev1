@@ -1,17 +1,23 @@
-// lib/providers/discover_provider.dart
+// Lütfen bu kodu kopyalayıp lib/providers/discover_provider.dart dosyasının içine yapıştırın.
 
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/compatibility.dart';
 import '../models/daily_match.dart';
-import '../widgets/filter_sheet.dart'; // FilterValues için import
+import '../widgets/filter_sheet.dart';
+import 'auth_provider.dart';
 
 class DiscoverProvider with ChangeNotifier {
   final ApiService _apiService;
+  AuthProvider _authProvider;
+
+  // --- NİHAİ GÜVENCE MEKANİZMASI ---
+  // Bu bayrak, loadInitialData'nın sadece BİR KEZ çağrılmasını garanti eder.
+  bool _initialDataLoaded = false;
 
   DailyMatch? _dailyMatch;
   List<Compatibility> _compatibilities = [];
-  bool _isLoadingInitial = true;
+  bool _isLoadingInitial = false;
   bool _isLoadingMore = false;
   String? _errorMessage;
   String? _nextPageUrl;
@@ -28,15 +34,28 @@ class DiscoverProvider with ChangeNotifier {
   String get genderFilter => _genderFilter;
   RangeValues get ageRangeFilter => _ageRangeFilter;
 
-  DiscoverProvider(this._apiService) {
-    loadInitialData();
+  DiscoverProvider(this._apiService, this._authProvider);
+
+  // Bu metod, ProxyProvider tarafından AuthProvider her değiştiğinde çağrılır.
+  void update(AuthProvider newAuthProvider) {
+    _authProvider = newAuthProvider;
+
+    // NİHAİ VE EN SAĞLAM MANTIK:
+    // 1. Harita hesaplanmış mı? -> EVET
+    // 2. Bu durum için veriyi daha önce yükledik mi? -> HAYIR
+    // O zaman veriyi ŞİMDİ YÜKLE ve bayrağı kaldır.
+    if (_authProvider.user?.profile.isBirthChartCalculated == true &&
+        !_initialDataLoaded) {
+      _initialDataLoaded = true;
+      print(
+          "DiscoverProvider: AuthProvider güncellemesi algılandı. Keşfet verileri yükleniyor.");
+      loadInitialData();
+    }
   }
 
   Future<void> loadInitialData() async {
     _isLoadingInitial = true;
     _errorMessage = null;
-    _compatibilities = [];
-    _nextPageUrl = null;
     notifyListeners();
 
     try {
@@ -48,16 +67,12 @@ class DiscoverProvider with ChangeNotifier {
           maxAge: _ageRangeFilter.end.round(),
         ),
       ]);
-
       _dailyMatch = results[0] as DailyMatch?;
       final paginatedResponse = results[1] as PaginatedResponse<Compatibility>;
-
       _compatibilities = paginatedResponse.results;
       _nextPageUrl = paginatedResponse.nextUrl;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-    } catch (e) {
-      _errorMessage = "Bilinmeyen bir hata oluştu.";
     } finally {
       _isLoadingInitial = false;
       notifyListeners();
@@ -66,14 +81,11 @@ class DiscoverProvider with ChangeNotifier {
 
   Future<void> fetchMoreProfiles() async {
     if (_isLoadingMore || !hasMore) return;
-
     _isLoadingMore = true;
     notifyListeners();
-
     try {
       final paginatedResponse = await _apiService.getDiscoverProfiles(
         nextUrl: _nextPageUrl,
-        // Önemli: Sonraki sayfa istekleri de mevcut filtreleri içermelidir.
         gender: _genderFilter,
         minAge: _ageRangeFilter.start.round(),
         maxAge: _ageRangeFilter.end.round(),
