@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/navigation_service.dart';
 import 'loading_screen.dart';
-import 'main_screen.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});

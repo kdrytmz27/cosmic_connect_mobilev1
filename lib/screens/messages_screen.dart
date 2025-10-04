@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../models/conversation.dart';
 import 'chat_room_screen.dart';
-import '../services/navigation_service.dart'; // Navigasyon için import
+// Navigasyon için import
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
